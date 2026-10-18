@@ -1,5 +1,7 @@
 @FlowForge_HostAddress = http://localhost:5083
 @workflowId = 1
+@stepId = 1
+@triggerId = 1
 
 POST {{FlowForge_HostAddress}}/api/workflows
 Content-Type: application/json
@@ -28,6 +30,98 @@ Content-Type: application/json
   "name": "Daily report updated",
   "status": 1
 }
+
+###
+
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Workflow started\"}"
+}
+
+###
+
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 1,
+  "actionType": 1,
+  "configJson": "{\"url\":\"https://example.com/hooks\",\"method\":\"POST\"}"
+}
+
+###
+
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 2,
+  "actionType": 0,
+  "configJson": "{\"to\":\"demo@example.com\",\"subject\":\"FlowForge\",\"body\":\"Workflow completed\"}"
+}
+
+###
+
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Accept: application/json
+
+###
+
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
+Accept: application/json
+
+###
+
+PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Workflow updated\"}"
+}
+
+###
+
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
+Content-Type: application/json
+
+{
+  "triggerType": 0,
+  "configJson": "{\"cron\":\"*/1 * * * *\"}"
+}
+
+###
+
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
+Accept: application/json
+
+###
+
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
+Accept: application/json
+
+###
+
+PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
+Content-Type: application/json
+
+{
+  "triggerType": 1,
+  "configJson": "{\"secret\":\"change-me\"}"
+}
+
+###
+
+DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
+
+###
+
+DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
 
 ###
 

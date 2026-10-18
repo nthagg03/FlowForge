@@ -9,6 +9,7 @@ public class Trigger
     public int WorkflowId { get; set; }
     public string ConfigJson { get; set; } 
     public TriggerType TriggerType { get; set; }
+    public Workflow Workflow { get; set; } = null!;
 
     public Trigger(int workflowId, string configJson, TriggerType triggerType)
     {

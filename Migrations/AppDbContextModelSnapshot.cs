@@ -45,6 +45,9 @@ namespace FlowForge.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("WorkflowId", "Order")
+                        .IsUnique();
+
                     b.ToTable("Steps");
                 });
 
@@ -60,7 +63,6 @@ namespace FlowForge.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ErrorMessage")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartedAt")
@@ -99,6 +101,8 @@ namespace FlowForge.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WorkflowId");
 
                     b.ToTable("Triggers");
                 });
@@ -153,6 +157,35 @@ namespace FlowForge.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("WorkflowExecutions");
+                });
+
+            modelBuilder.Entity("FlowForge.Models.Entities.Step", b =>
+                {
+                    b.HasOne("FlowForge.Models.Entities.Workflow", "Workflow")
+                        .WithMany("Steps")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("FlowForge.Models.Entities.Trigger", b =>
+                {
+                    b.HasOne("FlowForge.Models.Entities.Workflow", "Workflow")
+                        .WithMany("Triggers")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("FlowForge.Models.Entities.Workflow", b =>
+                {
+                    b.Navigation("Steps");
+
+                    b.Navigation("Triggers");
                 });
 #pragma warning restore 612, 618
         }

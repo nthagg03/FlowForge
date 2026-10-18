@@ -9,6 +9,8 @@ public class Workflow
     public WorkflowStatus Status { get; set; }
     public string CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
+    public ICollection<Step> Steps { get; set; } = new List<Step>();
+    public ICollection<Trigger> Triggers { get; set; } = new List<Trigger>();
 
     public Workflow(string name, string createdBy)
     {
