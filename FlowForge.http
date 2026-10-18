@@ -1,6 +1,34 @@
 @FlowForge_HostAddress = http://localhost:5083
+@workflowId = 1
 
-GET {{FlowForge_HostAddress}}/weatherforecast/
+POST {{FlowForge_HostAddress}}/api/workflows
+Content-Type: application/json
+
+{
+  "name": "Daily report",
+  "createdBy": "demo@example.com"
+}
+
+###
+
+GET {{FlowForge_HostAddress}}/api/workflows
 Accept: application/json
 
 ###
+
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
+Accept: application/json
+
+###
+
+PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
+Content-Type: application/json
+
+{
+  "name": "Daily report updated",
+  "status": 1
+}
+
+###
+
+DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
