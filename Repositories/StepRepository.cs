@@ -1,6 +1,8 @@
 using FlowForge.Data;
+using FlowForge.Exceptions;
 using FlowForge.Models.Entities;
 using FlowForge.Repositories.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace FlowForge.Repositories;
@@ -31,14 +33,14 @@ public class StepRepository : IStepRepository
     public async Task<Step> CreateStepAsync(Step step)
     {
         _dbContext.Steps.Add(step);
-        await _dbContext.SaveChangesAsync();
+        await SaveChangesAsync();
         return step;
     }
 
     public async Task<Step> UpdateStepAsync(Step step)
     {
         _dbContext.Steps.Update(step);
-        await _dbContext.SaveChangesAsync();
+        await SaveChangesAsync();
         return step;
     }
 
@@ -55,5 +57,17 @@ public class StepRepository : IStepRepository
             step.WorkflowId == workflowId &&
             step.Order == order &&
             (!excludedStepId.HasValue || step.Id != excludedStepId.Value));
+    }
+
+    private async Task SaveChangesAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            throw new StepOrderConflictException();
+        }
     }
 }

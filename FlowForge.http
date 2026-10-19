@@ -66,6 +66,18 @@ Content-Type: application/json
 
 ###
 
+# Expected: 400 Bad Request because CallApi accepts only http and https URLs.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 1,
+  "configJson": "{\"url\":\"file:///C:/sensitive.txt\",\"method\":\"GET\"}"
+}
+
+###
+
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Accept: application/json
 

@@ -1,6 +1,7 @@
 using FlowForge.Models.DTOs;
 using FlowForge.Models.Entities;
 using FlowForge.Models.Enums;
+using FlowForge.Exceptions;
 using FlowForge.Services;
 using FlowForge.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -21,14 +22,14 @@ public class StepsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<StepResponseDto>> CreateStep(int workflowId, CreateStepDto stepDto)
     {
-        if (!await _stepService.WorkflowExistsAsync(workflowId))
-        {
-            return NotFound();
-        }
-
         if (!TryValidate(stepDto.Order, stepDto.ActionType, stepDto.ConfigJson, out var validationResult))
         {
             return validationResult;
+        }
+
+        if (!await _stepService.WorkflowExistsAsync(workflowId))
+        {
+            return NotFound();
         }
 
         if (await _stepService.IsOrderInUseAsync(workflowId, stepDto.Order))
@@ -36,8 +37,15 @@ public class StepsController : ControllerBase
             return Conflict(new { message = "A step with this order already exists in the workflow." });
         }
 
-        var step = await _stepService.CreateStepAsync(workflowId, stepDto);
-        return CreatedAtAction(nameof(GetStepById), new { workflowId, id = step.Id }, ToResponseDto(step));
+        try
+        {
+            var step = await _stepService.CreateStepAsync(workflowId, stepDto);
+            return CreatedAtAction(nameof(GetStepById), new { workflowId, id = step.Id }, ToResponseDto(step));
+        }
+        catch (StepOrderConflictException)
+        {
+            return Conflict(new { message = "A step with this order already exists in the workflow." });
+        }
     }
 
     [HttpGet]
@@ -62,14 +70,14 @@ public class StepsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<StepResponseDto>> UpdateStep(int workflowId, int id, UpdateStepDto stepDto)
     {
-        if (!await _stepService.WorkflowExistsAsync(workflowId))
-        {
-            return NotFound();
-        }
-
         if (!TryValidate(stepDto.Order, stepDto.ActionType, stepDto.ConfigJson, out var validationResult))
         {
             return validationResult;
+        }
+
+        if (!await _stepService.WorkflowExistsAsync(workflowId))
+        {
+            return NotFound();
         }
 
         if (await _stepService.IsOrderInUseAsync(workflowId, stepDto.Order, id))
@@ -77,8 +85,15 @@ public class StepsController : ControllerBase
             return Conflict(new { message = "A step with this order already exists in the workflow." });
         }
 
-        var step = await _stepService.UpdateStepAsync(workflowId, id, stepDto);
-        return step is null ? NotFound() : Ok(ToResponseDto(step));
+        try
+        {
+            var step = await _stepService.UpdateStepAsync(workflowId, id, stepDto);
+            return step is null ? NotFound() : Ok(ToResponseDto(step));
+        }
+        catch (StepOrderConflictException)
+        {
+            return Conflict(new { message = "A step with this order already exists in the workflow." });
+        }
     }
 
     [HttpDelete("{id:int}")]

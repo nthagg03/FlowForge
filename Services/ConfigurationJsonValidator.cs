@@ -25,9 +25,10 @@ public static class ConfigurationJsonValidator
 
             case ActionType.CallApi:
                 if (!RequireString(config, "url", out var url, out errorMessage) ||
-                    !Uri.TryCreate(url, UriKind.Absolute, out _))
+                    !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+                    (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
                 {
-                    errorMessage = "ConfigJson must contain a valid absolute url for CallApi.";
+                    errorMessage = "ConfigJson must contain an absolute http or https url for CallApi.";
                     return false;
                 }
 
