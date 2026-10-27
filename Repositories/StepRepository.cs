@@ -59,6 +59,11 @@ public class StepRepository : IStepRepository
             (!excludedStepId.HasValue || step.Id != excludedStepId.Value));
     }
 
+    public Task<bool> HasExecutionHistoryAsync(int stepId)
+    {
+        return _dbContext.StepExecutionLogs.AnyAsync(log => log.StepId == stepId);
+    }
+
     private async Task SaveChangesAsync()
     {
         try

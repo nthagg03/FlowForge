@@ -59,11 +59,18 @@ namespace FlowForge.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Output")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("datetime2");
@@ -78,6 +85,10 @@ namespace FlowForge.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("StepId");
+
+                    b.HasIndex("WorkflowExecutionId");
 
                     b.ToTable("StepExecutionLogs");
                 });
@@ -151,10 +162,15 @@ namespace FlowForge.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int>("TriggerType")
+                        .HasColumnType("int");
+
                     b.Property<int>("WorkflowId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WorkflowId", "StartedAt");
 
                     b.ToTable("WorkflowExecutions");
                 });
@@ -170,6 +186,25 @@ namespace FlowForge.Migrations
                     b.Navigation("Workflow");
                 });
 
+            modelBuilder.Entity("FlowForge.Models.Entities.StepExecutionLog", b =>
+                {
+                    b.HasOne("FlowForge.Models.Entities.Step", "Step")
+                        .WithMany("StepExecutionLogs")
+                        .HasForeignKey("StepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FlowForge.Models.Entities.WorkflowExecution", "WorkflowExecution")
+                        .WithMany("StepExecutionLogs")
+                        .HasForeignKey("WorkflowExecutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Step");
+
+                    b.Navigation("WorkflowExecution");
+                });
+
             modelBuilder.Entity("FlowForge.Models.Entities.Trigger", b =>
                 {
                     b.HasOne("FlowForge.Models.Entities.Workflow", "Workflow")
@@ -181,11 +216,34 @@ namespace FlowForge.Migrations
                     b.Navigation("Workflow");
                 });
 
+            modelBuilder.Entity("FlowForge.Models.Entities.WorkflowExecution", b =>
+                {
+                    b.HasOne("FlowForge.Models.Entities.Workflow", "Workflow")
+                        .WithMany("WorkflowExecutions")
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("FlowForge.Models.Entities.Step", b =>
+                {
+                    b.Navigation("StepExecutionLogs");
+                });
+
             modelBuilder.Entity("FlowForge.Models.Entities.Workflow", b =>
                 {
                     b.Navigation("Steps");
 
                     b.Navigation("Triggers");
+
+                    b.Navigation("WorkflowExecutions");
+                });
+
+            modelBuilder.Entity("FlowForge.Models.Entities.WorkflowExecution", b =>
+                {
+                    b.Navigation("StepExecutionLogs");
                 });
 #pragma warning restore 612, 618
         }

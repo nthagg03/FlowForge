@@ -6,15 +6,19 @@ public class WorkflowExecution
 {
     public int Id { get; set; }
     public int WorkflowId { get; set; }
+    public TriggerType TriggerType { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
-    public ExecutionStatus Status {get; set;}
+    public ExecutionStatus Status { get; set; }
 
-    public WorkflowExecution(int workflowId)
+    public Workflow Workflow { get; set; } = null!;
+    public ICollection<StepExecutionLog> StepExecutionLogs { get; set; } = new List<StepExecutionLog>();
+
+    public WorkflowExecution(int workflowId, TriggerType triggerType)
     {
         WorkflowId = workflowId;
+        TriggerType = triggerType;
         Status = ExecutionStatus.Running;
-        StartedAt = DateTime.Now;
+        StartedAt = DateTime.UtcNow;
     }
-
 }

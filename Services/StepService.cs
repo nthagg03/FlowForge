@@ -62,4 +62,9 @@ public class StepService : IStepService
     {
         return _stepRepository.IsOrderInUseAsync(workflowId, order, excludedStepId);
     }
+
+    public Task<bool> HasExecutionHistoryAsync(int stepId)
+    {
+        return _stepRepository.HasExecutionHistoryAsync(stepId);
+    }
 }
