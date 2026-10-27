@@ -11,12 +11,13 @@ public class Workflow
     public DateTime CreatedAt { get; set; }
     public ICollection<Step> Steps { get; set; } = new List<Step>();
     public ICollection<Trigger> Triggers { get; set; } = new List<Trigger>();
+    public ICollection<WorkflowExecution> WorkflowExecutions { get; set; } = new List<WorkflowExecution>();
 
     public Workflow(string name, string createdBy)
     {
         Name = name;
         CreatedBy = createdBy;
         Status = WorkflowStatus.Draft;
-        CreatedAt = DateTime.Now;
+        CreatedAt = DateTime.UtcNow;
     }
 }

@@ -10,6 +10,7 @@ public class Step
     public ActionType ActionType { get; set; }
     public string ConfigJson { get; set; } 
     public Workflow Workflow { get; set; } = null!;
+    public ICollection<StepExecutionLog> StepExecutionLogs { get; set; } = new List<StepExecutionLog>();
 
     public Step(int workflowId, int order, string configJson, ActionType actionType)
     {
