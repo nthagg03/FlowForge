@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using FlowForge.Repositories;
 using FlowForge.Repositories.Interfaces;
 using FlowForge.Services;
+using FlowForge.Services.ExecutionEngine;
 using FlowForge.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,9 +16,14 @@ builder.Services.AddScoped<IStepRepository, StepRepository>();
 builder.Services.AddScoped<IStepService, StepService>();
 builder.Services.AddScoped<ITriggerRepository, TriggerRepository>();
 builder.Services.AddScoped<ITriggerService, TriggerService>();
+builder.Services.AddSingleton<IActionHandler, WriteLogActionHandler>();
+builder.Services.AddSingleton<IActionHandler, SendEmailActionHandler>();
+builder.Services.AddSingleton<IActionHandlerResolver, ActionHandlerResolver>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<IActionHandlerResolver>();
 
 if (app.Environment.IsDevelopment())
 {
