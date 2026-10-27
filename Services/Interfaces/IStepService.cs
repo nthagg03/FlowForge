@@ -12,4 +12,5 @@ public interface IStepService
     Task<Step?> UpdateStepAsync(int workflowId, int id, UpdateStepDto stepDto);
     Task<bool> DeleteStepAsync(int workflowId, int id);
     Task<bool> IsOrderInUseAsync(int workflowId, int order, int? excludedStepId = null);
+    Task<bool> HasExecutionHistoryAsync(int stepId);
 }

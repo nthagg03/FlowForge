@@ -10,4 +10,5 @@ public interface IStepRepository
     Task<Step> UpdateStepAsync(Step step);
     Task<bool> DeleteStepAsync(Step step);
     Task<bool> IsOrderInUseAsync(int workflowId, int order, int? excludedStepId = null);
+    Task<bool> HasExecutionHistoryAsync(int stepId);
 }

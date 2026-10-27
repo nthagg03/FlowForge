@@ -104,6 +104,19 @@ public class StepsController : ControllerBase
             return NotFound();
         }
 
+        var step = await _stepService.GetStepByIdAsync(workflowId, id);
+        if (step is null)
+        {
+            return NotFound();
+        }
+
+        if (await _stepService.HasExecutionHistoryAsync(id))
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                detail: "Step has execution history and cannot be deleted");
+        }
+
         return await _stepService.DeleteStepAsync(workflowId, id) ? NoContent() : NotFound();
     }
 
