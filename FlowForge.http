@@ -1,8 +1,6 @@
 @FlowForge_HostAddress = http://localhost:5083
-@workflowId = 1
-@stepId = 1
-@triggerId = 1
 
+# @name createWorkflow
 POST {{FlowForge_HostAddress}}/api/workflows
 Content-Type: application/json
 
@@ -10,6 +8,9 @@ Content-Type: application/json
   "name": "Daily report",
   "createdBy": "demo@example.com"
 }
+
+###
+@workflowId = {{createWorkflow.response.body.$.id}}
 
 ###
 
@@ -31,8 +32,7 @@ Content-Type: application/json
   "status": 1
 }
 
-###
-
+# @name createStep1
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Content-Type: application/json
 
@@ -41,6 +41,9 @@ Content-Type: application/json
   "actionType": 2,
   "configJson": "{\"message\":\"Workflow started\"}"
 }
+
+###
+@stepId = {{createStep1.response.body.$.id}}
 
 ###
 
@@ -78,6 +81,66 @@ Content-Type: application/json
 
 ###
 
+# Expected: 409 Conflict because order 0 already belongs to createStep1.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Duplicate order\"}"
+}
+
+###
+
+# Expected: 400 Bad Request because WriteLog requires message.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 2,
+  "configJson": "{}"
+}
+
+###
+
+# Expected: 400 Bad Request because configJson is malformed.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 2,
+  "configJson": "{invalid-json}"
+}
+
+###
+
+# Expected: 404 Not Found because workflow 9999 does not exist.
+POST {{FlowForge_HostAddress}}/api/workflows/9999/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Missing workflow\"}"
+}
+
+###
+
+# Expected: 400 Bad Request because ActionType 99 is outside the enum.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 99,
+  "configJson": "{\"message\":\"Unsupported action\"}"
+}
+
+###
+
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Accept: application/json
 
@@ -97,8 +160,7 @@ Content-Type: application/json
   "configJson": "{\"message\":\"Workflow updated\"}"
 }
 
-###
-
+# @name createTrigger
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
 Content-Type: application/json
 
@@ -106,6 +168,9 @@ Content-Type: application/json
   "triggerType": 0,
   "configJson": "{\"cron\":\"*/1 * * * *\"}"
 }
+
+###
+@triggerId = {{createTrigger.response.body.$.id}}
 
 ###
 
@@ -129,12 +194,17 @@ Content-Type: application/json
 
 ###
 
-DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
-
-###
-
-DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
-
-###
-
+# Cascade-delete test: do not delete individual step/trigger before this request.
 DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
+
+###
+
+# Expected: 404 Not Found because the workflow was deleted with its steps.
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Accept: application/json
+
+###
+
+# Expected: 404 Not Found because the workflow was deleted with its triggers.
+GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
+Accept: application/json

@@ -1,4 +1,5 @@
 using FlowForge.Data;
+using FlowForge.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using FlowForge.Repositories;
 using FlowForge.Repositories.Interfaces;
@@ -19,6 +20,8 @@ builder.Services.AddScoped<ITriggerService, TriggerService>();
 builder.Services.AddSingleton<IActionHandler, WriteLogActionHandler>();
 builder.Services.AddSingleton<IActionHandler, SendEmailActionHandler>();
 builder.Services.AddSingleton<IActionHandlerResolver, ActionHandlerResolver>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -30,6 +33,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.MapControllers();
 

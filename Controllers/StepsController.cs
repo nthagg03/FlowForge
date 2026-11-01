@@ -1,7 +1,7 @@
+using FlowForge.Exceptions;
 using FlowForge.Models.DTOs;
 using FlowForge.Models.Entities;
 using FlowForge.Models.Enums;
-using FlowForge.Exceptions;
 using FlowForge.Services;
 using FlowForge.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -34,18 +34,12 @@ public class StepsController : ControllerBase
 
         if (await _stepService.IsOrderInUseAsync(workflowId, stepDto.Order))
         {
-            return Conflict(new { message = "A step with this order already exists in the workflow." });
+            throw new StepOrderConflictException();
         }
 
-        try
-        {
-            var step = await _stepService.CreateStepAsync(workflowId, stepDto);
-            return CreatedAtAction(nameof(GetStepById), new { workflowId, id = step.Id }, ToResponseDto(step));
-        }
-        catch (StepOrderConflictException)
-        {
-            return Conflict(new { message = "A step with this order already exists in the workflow." });
-        }
+        // StepOrderConflictException (race condition) propagates to GlobalExceptionHandler → 409
+        var step = await _stepService.CreateStepAsync(workflowId, stepDto);
+        return CreatedAtAction(nameof(GetStepById), new { workflowId, id = step.Id }, ToResponseDto(step));
     }
 
     [HttpGet]
@@ -82,18 +76,12 @@ public class StepsController : ControllerBase
 
         if (await _stepService.IsOrderInUseAsync(workflowId, stepDto.Order, id))
         {
-            return Conflict(new { message = "A step with this order already exists in the workflow." });
+            throw new StepOrderConflictException();
         }
 
-        try
-        {
-            var step = await _stepService.UpdateStepAsync(workflowId, id, stepDto);
-            return step is null ? NotFound() : Ok(ToResponseDto(step));
-        }
-        catch (StepOrderConflictException)
-        {
-            return Conflict(new { message = "A step with this order already exists in the workflow." });
-        }
+        // StepOrderConflictException (race condition) propagates to GlobalExceptionHandler → 409
+        var step = await _stepService.UpdateStepAsync(workflowId, id, stepDto);
+        return step is null ? NotFound() : Ok(ToResponseDto(step));
     }
 
     [HttpDelete("{id:int}")]
@@ -112,11 +100,10 @@ public class StepsController : ControllerBase
 
         if (await _stepService.HasExecutionHistoryAsync(id))
         {
-            return Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                detail: "Step has execution history and cannot be deleted");
+            throw new StepHasExecutionHistoryException();
         }
 
+        // StepHasExecutionHistoryException (FK-547 race condition) propagates → 409
         return await _stepService.DeleteStepAsync(workflowId, id) ? NoContent() : NotFound();
     }
 

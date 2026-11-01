@@ -47,7 +47,14 @@ public class StepRepository : IStepRepository
     public async Task<bool> DeleteStepAsync(Step step)
     {
         _dbContext.Steps.Remove(step);
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 547 })
+        {
+            throw new StepHasExecutionHistoryException();
+        }
         return true;
     }
 
