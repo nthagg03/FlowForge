@@ -19,6 +19,13 @@ public class WorkflowRepository : IWorkflowRepository
         return await _dbcontext.Workflows.FindAsync(id);
     }
 
+    public Task<Workflow?> GetWorkflowWithStepsAsync(int id)
+    {
+        return _dbcontext.Workflows
+            .Include(w => w.Steps.OrderBy(s => s.Order))
+            .SingleOrDefaultAsync(w => w.Id == id);
+    }
+
     public async Task<List<Workflow>> GetAllWorkflowsAsync()
     {
         return await _dbcontext.Workflows.ToListAsync();
