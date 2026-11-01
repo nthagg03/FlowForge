@@ -1,5 +1,7 @@
 using FlowForge.Models.DTOs;
 using FlowForge.Models.Entities;
+using FlowForge.Models.Enums;
+using FlowForge.Services.ExecutionEngine;
 using FlowForge.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +12,12 @@ namespace FlowForge.Controllers;
 public class WorkflowsController : ControllerBase
 {
     private readonly IWorkflowService _workflowService;
+    private readonly IWorkflowExecutor _workflowExecutor;
 
-    public WorkflowsController(IWorkflowService workflowService)
+    public WorkflowsController(IWorkflowService workflowService, IWorkflowExecutor workflowExecutor)
     {
         _workflowService = workflowService;
+        _workflowExecutor = workflowExecutor;
     }
 
     [HttpPost]
@@ -56,6 +60,18 @@ public class WorkflowsController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
+    /// <summary>
+    /// POST /api/workflows/{id}/run
+    /// Synchronously runs all steps of the workflow and returns the completed execution.
+    /// Business-rule violations (not found, not Active, no steps) are handled by GlobalExceptionHandler.
+    /// </summary>
+    [HttpPost("{id:int}/run")]
+    public async Task<ActionResult<ExecutionResponseDto>> RunWorkflow(int id)
+    {
+        var execution = await _workflowExecutor.ExecuteAsync(id, TriggerType.Manual);
+        return Ok(ToExecutionDto(execution));
+    }
+
     private static WorkflowResponseDto ToResponseDto(Workflow workflow)
     {
         return new WorkflowResponseDto
@@ -65,6 +81,19 @@ public class WorkflowsController : ControllerBase
             Status = workflow.Status,
             CreatedBy = workflow.CreatedBy,
             CreatedAt = workflow.CreatedAt
+        };
+    }
+
+    private static ExecutionResponseDto ToExecutionDto(WorkflowExecution execution)
+    {
+        return new ExecutionResponseDto
+        {
+            Id = execution.Id,
+            WorkflowId = execution.WorkflowId,
+            TriggerType = execution.TriggerType,
+            Status = execution.Status,
+            StartedAt = execution.StartedAt,
+            CompletedAt = execution.CompletedAt
         };
     }
 }
