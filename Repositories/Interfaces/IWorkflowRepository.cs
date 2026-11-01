@@ -6,7 +6,8 @@ public interface IWorkflowRepository
 {
     Task<Workflow> CreateWorkflowAsync(Workflow workflow);
     Task<Workflow?> GetWorkflowByIdAsync(int id);
+    Task<Workflow?> GetWorkflowWithStepsAsync(int id);
     Task<List<Workflow>> GetAllWorkflowsAsync();
     Task<Workflow?> UpdateWorkflowAsync( Workflow workflow);
     Task<bool> DeleteWorkflowAsync(int id);
-}
+}

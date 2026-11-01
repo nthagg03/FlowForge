@@ -1,8 +1,10 @@
 @FlowForge_HostAddress = http://localhost:5083
-@workflowId = 1
-@stepId = 1
-@triggerId = 1
 
+###############################################################################
+# 1. WORKFLOW & STEP CRUD (Existing Scenarios)
+###############################################################################
+
+# @name createWorkflow
 POST {{FlowForge_HostAddress}}/api/workflows
 Content-Type: application/json
 
@@ -12,17 +14,17 @@ Content-Type: application/json
 }
 
 ###
+@workflowId = {{createWorkflow.response.body.$.id}}
 
+###
 GET {{FlowForge_HostAddress}}/api/workflows
 Accept: application/json
 
 ###
-
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
 Accept: application/json
 
 ###
-
 PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
 Content-Type: application/json
 
@@ -32,7 +34,7 @@ Content-Type: application/json
 }
 
 ###
-
+# @name createStep1
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Content-Type: application/json
 
@@ -43,7 +45,9 @@ Content-Type: application/json
 }
 
 ###
+@stepId = {{createStep1.response.body.$.id}}
 
+###
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Content-Type: application/json
 
@@ -54,7 +58,6 @@ Content-Type: application/json
 }
 
 ###
-
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Content-Type: application/json
 
@@ -65,7 +68,6 @@ Content-Type: application/json
 }
 
 ###
-
 # Expected: 400 Bad Request because CallApi accepts only http and https URLs.
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Content-Type: application/json
@@ -77,17 +79,69 @@ Content-Type: application/json
 }
 
 ###
+# Expected: 409 Conflict (ProblemDetails) because order 0 already belongs to createStep1.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
 
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Duplicate order\"}"
+}
+
+###
+# Expected: 400 Bad Request because WriteLog requires message.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 2,
+  "configJson": "{}"
+}
+
+###
+# Expected: 400 Bad Request because configJson is malformed.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 2,
+  "configJson": "{invalid-json}"
+}
+
+###
+# Expected: 404 Not Found (ProblemDetails) because workflow 9999 does not exist.
+POST {{FlowForge_HostAddress}}/api/workflows/9999/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Missing workflow\"}"
+}
+
+###
+# Expected: 400 Bad Request because ActionType 99 is outside the enum.
+POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 3,
+  "actionType": 99,
+  "configJson": "{\"message\":\"Unsupported action\"}"
+}
+
+###
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps
 Accept: application/json
 
 ###
-
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
 Accept: application/json
 
 ###
-
 PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
 Content-Type: application/json
 
@@ -98,7 +152,7 @@ Content-Type: application/json
 }
 
 ###
-
+# @name createTrigger
 POST {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
 Content-Type: application/json
 
@@ -108,17 +162,17 @@ Content-Type: application/json
 }
 
 ###
+@triggerId = {{createTrigger.response.body.$.id}}
 
+###
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers
 Accept: application/json
 
 ###
-
 GET {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
 Accept: application/json
 
 ###
-
 PUT {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
 Content-Type: application/json
 
@@ -127,14 +181,248 @@ Content-Type: application/json
   "configJson": "{\"secret\":\"change-me\"}"
 }
 
+
+###############################################################################
+# 2. PHASE 3 EXECUTION ENGINE SCENARIOS
+###############################################################################
+
+# =============================================================================
+# Kịch bản 1: Workflow Active (WriteLog + SendEmail) chạy thành công (200 OK)
+# =============================================================================
+
+# 1.1 Tạo workflow mới
+# @name createActiveWorkflow
+POST {{FlowForge_HostAddress}}/api/workflows
+Content-Type: application/json
+
+{
+  "name": "Active Notification Pipeline",
+  "createdBy": "dev@example.com"
+}
+
 ###
-
-DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/steps/{{stepId}}
-
-###
-
-DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}/triggers/{{triggerId}}
+@activeWorkflowId = {{createActiveWorkflow.response.body.$.id}}
 
 ###
+# 1.2 Kích hoạt workflow (status = 1: Active)
+PUT {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}
+Content-Type: application/json
 
-DELETE {{FlowForge_HostAddress}}/api/workflows/{{workflowId}}
+{
+  "name": "Active Notification Pipeline",
+  "status": 1
+}
+
+###
+# 1.3 Thêm Step 1: WriteLog (ActionType = 2)
+# @name createActiveStep1
+POST {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Pipeline step 1 started\"}"
+}
+
+###
+@step1WithLogsId = {{createActiveStep1.response.body.$.id}}
+
+###
+# 1.4 Thêm Step 2: SendEmail (ActionType = 0)
+POST {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 1,
+  "actionType": 0,
+  "configJson": "{\"to\":\"alerts@example.com\",\"subject\":\"Pipeline Alert\",\"body\":\"Pipeline executed successfully\"}"
+}
+
+###
+# 1.5 Chạy workflow Active -> Mong đợi 200 OK, Status: 1 (Success)
+# @name runActiveWorkflow
+POST {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}/run
+Accept: application/json
+
+###
+@executionId = {{runActiveWorkflow.response.body.$.id}}
+
+
+# =============================================================================
+# Kịch bản 2: Workflow Draft (status = 0) -> Mong đợi 409 Conflict (ProblemDetails)
+# =============================================================================
+
+# 2.1 Tạo workflow mới (mặc định status = 0: Draft)
+# @name createDraftWorkflow
+POST {{FlowForge_HostAddress}}/api/workflows
+Content-Type: application/json
+
+{
+  "name": "Draft Workflow",
+  "createdBy": "dev@example.com"
+}
+
+###
+@draftWorkflowId = {{createDraftWorkflow.response.body.$.id}}
+
+###
+# 2.2 Thêm Step cho Draft workflow
+POST {{FlowForge_HostAddress}}/api/workflows/{{draftWorkflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Draft step\"}"
+}
+
+###
+# 2.3 Chạy Draft workflow -> Mong đợi 409 Conflict (ProblemDetails: not Active)
+POST {{FlowForge_HostAddress}}/api/workflows/{{draftWorkflowId}}/run
+Accept: application/json
+
+
+# =============================================================================
+# Kịch bản 3: Workflow không có step -> Mong đợi 400 Bad Request (ProblemDetails)
+# =============================================================================
+
+# 3.1 Tạo workflow mới
+# @name createEmptyWorkflow
+POST {{FlowForge_HostAddress}}/api/workflows
+Content-Type: application/json
+
+{
+  "name": "Empty Active Workflow",
+  "createdBy": "dev@example.com"
+}
+
+###
+@emptyWorkflowId = {{createEmptyWorkflow.response.body.$.id}}
+
+###
+# 3.2 Kích hoạt workflow mà không thêm step nào
+PUT {{FlowForge_HostAddress}}/api/workflows/{{emptyWorkflowId}}
+Content-Type: application/json
+
+{
+  "name": "Empty Active Workflow",
+  "status": 1
+}
+
+###
+# 3.3 Chạy workflow không có step -> Mong đợi 400 Bad Request (ProblemDetails: no steps)
+POST {{FlowForge_HostAddress}}/api/workflows/{{emptyWorkflowId}}/run
+Accept: application/json
+
+
+# =============================================================================
+# Kịch bản 4: Workflow không tồn tại -> Mong đợi 404 Not Found (ProblemDetails)
+# =============================================================================
+
+POST {{FlowForge_HostAddress}}/api/workflows/999999/run
+Accept: application/json
+
+
+# =============================================================================
+# Kịch bản 5: Workflow có step lỗi
+# Lưu ý: Vì API chặn tạo step sai định dạng qua validator, để tạo step lỗi
+# bạn hãy cập nhật trực tiếp DB (SQL Server Management Studio hoặc sqlcmd):
+#
+#   UPDATE Steps 
+#   SET ConfigJson = '{"invalid_field":123}' 
+#   WHERE Id = <failStepId>;
+#
+# Khi chạy POST /api/workflows/{id}/run:
+# - Step 1 thất bại -> Status = Failed (2), ghi ErrorMessage
+# - Workflow dừng ngay lập tức; Step 2 không được chạy và không có log ghi nhận
+# - Execution kết thúc với Status = Failed (2), không kẹt ở Running (0)
+# =============================================================================
+
+# 5.1 Tạo workflow cho kịch bản step lỗi
+# @name createFailWorkflow
+POST {{FlowForge_HostAddress}}/api/workflows
+Content-Type: application/json
+
+{
+  "name": "Workflow with Failing Step",
+  "createdBy": "tester@example.com"
+}
+
+###
+@failWorkflowId = {{createFailWorkflow.response.body.$.id}}
+
+###
+# 5.2 Kích hoạt workflow
+PUT {{FlowForge_HostAddress}}/api/workflows/{{failWorkflowId}}
+Content-Type: application/json
+
+{
+  "name": "Workflow with Failing Step",
+  "status": 1
+}
+
+###
+# 5.3 Thêm Step 1 (sau đó cập nhật DB với ConfigJson sai nếu muốn test)
+# @name createFailingStep1
+POST {{FlowForge_HostAddress}}/api/workflows/{{failWorkflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 0,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Step 1 to be modified in DB\"}"
+}
+
+###
+@failingStep1Id = {{createFailingStep1.response.body.$.id}}
+
+###
+# 5.4 Thêm Step 2 (không bao giờ được chạy nếu Step 1 thất bại)
+POST {{FlowForge_HostAddress}}/api/workflows/{{failWorkflowId}}/steps
+Content-Type: application/json
+
+{
+  "order": 1,
+  "actionType": 2,
+  "configJson": "{\"message\":\"Step 2 should never run\"}"
+}
+
+###
+# 5.5 Chạy workflow lỗi (sau khi đã sửa ConfigJson trong DB)
+POST {{FlowForge_HostAddress}}/api/workflows/{{failWorkflowId}}/run
+Accept: application/json
+
+
+# =============================================================================
+# Kịch bản 6: Xem danh sách và chi tiết execution
+# =============================================================================
+
+# 6.1 Lấy danh sách execution theo workflow (phân trang, mới nhất trước)
+GET {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}/executions?page=1&pageSize=10
+Accept: application/json
+
+###
+# 6.2 Lấy danh sách execution của workflow không tồn tại -> Mong đợi 404 Not Found
+GET {{FlowForge_HostAddress}}/api/workflows/999999/executions
+Accept: application/json
+
+###
+# 6.3 Lấy chi tiết execution kèm log từng step theo thứ tự StartedAt
+GET {{FlowForge_HostAddress}}/api/executions/{{executionId}}
+Accept: application/json
+
+###
+# 6.4 Lấy chi tiết execution không tồn tại -> Mong đợi 404 Not Found
+GET {{FlowForge_HostAddress}}/api/executions/999999
+Accept: application/json
+
+
+# =============================================================================
+# Kịch bản 7: Xóa Step đã có lịch sử thực thi -> Mong đợi 409 Conflict
+# Step1 đã chạy ở Kịch bản 1 nên đã có StepExecutionLog.
+# API kiểm tra HasExecutionHistoryAsync (hoặc FK 547 race condition) và trả 409.
+# =============================================================================
+
+DELETE {{FlowForge_HostAddress}}/api/workflows/{{activeWorkflowId}}/steps/{{step1WithLogsId}}
+Accept: application/json
